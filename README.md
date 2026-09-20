@@ -58,9 +58,12 @@ Codex and OpenAI were used throughout the hackathon to accelerate the build whil
 
 ### Demo / Pitch Video
 
-[![Watch the Loop demo video](https://drive.google.com/thumbnail?id=1BX1BAOMjXKLrkT2PCEUd6s__-dksnOQ3&sz=w1200)](https://drive.google.com/file/d/1BX1BAOMjXKLrkT2PCEUd6s__-dksnOQ3/view?usp=sharing)
+<video controls preload="metadata" width="100%">
+  <source src="assets/demo/loop-walkthrough-voiceover.webm" type="video/webm">
+  Your browser does not support embedded video.
+</video>
 
-Watch the [Loop demo / pitch video](https://drive.google.com/file/d/1BX1BAOMjXKLrkT2PCEUd6s__-dksnOQ3/view?usp=sharing).
+[▶ Watch or download the Loop demo / pitch video with voiceover](assets/demo/loop-walkthrough-voiceover.webm)
 
 ## Screenshots
 
