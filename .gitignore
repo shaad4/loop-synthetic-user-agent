@@ -1,0 +1,17 @@
+frontend/node_modules/
+frontend/.next/
+frontend/*.tsbuildinfo
+demoshop/node_modules/
+demoshop/.next/
+demoshop/*.tsbuildinfo
+backend/.venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/loop.db
+backend/storage/screenshots/*
+!backend/storage/screenshots/.gitkeep
+backend/storage/traces/*
+!backend/storage/traces/.gitkeep
+.env
+.env.*
+!.env.example

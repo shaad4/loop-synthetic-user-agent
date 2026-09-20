@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+addopts = "-m 'not browser'"
+markers = [
+  "browser: requires a local Chromium process and is excluded from the default unit-test run.",
+]
