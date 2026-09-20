@@ -67,6 +67,7 @@ async def _run_loop(
             _finish_run(run_id, False, "Target redirected outside the configured product origin before the audit could begin.")
             return
         await _record_observation(run_id, browser, "open_url", target_url, "Opened target application")
+        observation = await _dismiss_blocking_overlay(run_id, browser, observation, recent_actions)
         network_failure_cursor = _record_new_diagnostics(run_id, browser, network_failure_cursor)
         if network_failure_cursor:
             recent_actions.append(
@@ -76,6 +77,7 @@ async def _run_loop(
         for step in range(1, settings.agent_max_steps + 1):
             if _stop_requested(run_id):
                 return
+            observation = await _dismiss_blocking_overlay(run_id, browser, observation, recent_actions)
             _record_agent_thinking(run_id, step)
             context = AgentContext(
                 goal=goal,
@@ -437,6 +439,23 @@ async def _record_observation(
 
 
     await _capture_screenshot(run_id, browser, action_type)
+
+
+async def _dismiss_blocking_overlay(
+    run_id: str,
+    browser: BrowserService,
+    observation: PageObservation,
+    recent_actions: list[str],
+) -> PageObservation:
+    """Clear a safe, visible blocker before giving the page back to the agent."""
+    label = await browser.dismiss_blocking_overlay()
+    if label is None:
+        return observation
+    updated_observation = await browser.observe()
+    outcome = f'Closed the blocking pop-up using “{label}”.'
+    await _record_observation(run_id, browser, "dismiss_overlay", label, outcome)
+    recent_actions.append("Loop closed a dismissible blocking pop-up before continuing the journey.")
+    return updated_observation
 
 
 async def _capture_screenshot(run_id: str, browser: BrowserService, action_type: str) -> None:

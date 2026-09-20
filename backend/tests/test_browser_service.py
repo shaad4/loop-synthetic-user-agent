@@ -30,6 +30,15 @@ def test_chromium_error_page_navigation_race_is_recognized() -> None:
     assert not BrowserService._is_chrome_error_interruption(RuntimeError("net::ERR_TIMED_OUT"))
 
 
+def test_only_safe_explicit_overlay_dismissals_are_allowed() -> None:
+    assert BrowserService._is_safe_overlay_dismissal_label("Not now")
+    assert BrowserService._is_safe_overlay_dismissal_label("Reject all")
+    assert BrowserService._is_safe_overlay_dismissal_label("Close modal")
+    assert not BrowserService._is_safe_overlay_dismissal_label("Sign in")
+    assert not BrowserService._is_safe_overlay_dismissal_label("Accept all")
+    assert not BrowserService._is_safe_overlay_dismissal_label("Pay now")
+
+
 def test_feedback_focus_terms_only_use_explicit_labels() -> None:
     assert BrowserService._feedback_focus_terms(
         'The “Get started” control is unclear, while `Pricing` is easy to miss.'

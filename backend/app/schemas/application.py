@@ -6,8 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
 class ApplicationCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=120, examples=["DemoShop"])
-    target_url: HttpUrl = Field(examples=["http://localhost:3001"])
+    name: str = Field(min_length=2, max_length=120, examples=["Example product"])
+    target_url: HttpUrl = Field(examples=["https://example.com"])
     repository_url: HttpUrl | None = None
     repository_branch: str = Field(default="main", min_length=1, max_length=120)
 
@@ -15,8 +15,8 @@ class ApplicationCreate(BaseModel):
 class ApplicationUpdate(BaseModel):
     """The editable target details for an existing product."""
 
-    name: str = Field(min_length=2, max_length=120, examples=["DemoShop"])
-    target_url: HttpUrl = Field(examples=["http://localhost:3001"])
+    name: str = Field(min_length=2, max_length=120, examples=["Example product"])
+    target_url: HttpUrl = Field(examples=["https://example.com"])
     repository_url: HttpUrl | None = None
     repository_branch: str = Field(default="main", min_length=1, max_length=120)
 

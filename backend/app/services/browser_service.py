@@ -99,6 +99,60 @@ class BrowserService:
             await self._goto_with_recovery(page, fallback_url)
         return await self.observe()
 
+    async def dismiss_blocking_overlay(self) -> str | None:
+        """Close one clearly dismissible modal that blocks the visible page.
+
+        This is deliberately narrower than a general-purpose clicker. It only
+        uses explicit close, dismiss, postpone, or reject controls inside a
+        dialog, popup, overlay, or cookie banner. Login, payment, CAPTCHA, and
+        consent choices are left for the journey or a user handoff.
+        """
+        page = self._require_page()
+        controls = page.locator(
+            "button, [role='button'], a[role='button'], input[type='button'], input[type='submit']"
+        )
+        candidates = await controls.evaluate_all(
+            """elements => elements.map((element, index) => {
+                const label = [
+                    element.getAttribute('aria-label'),
+                    element.getAttribute('title'),
+                    element.getAttribute('value'),
+                    element.innerText || element.textContent,
+                ].find(Boolean) || '';
+                const overlay = element.closest(
+                    "[role='dialog'], [aria-modal='true'], [data-modal], [class*='modal' i], " +
+                    "[class*='popup' i], [class*='overlay' i], [class*='cookie' i], [id*='modal' i], [id*='popup' i]"
+                );
+                if (!overlay || !element.getClientRects().length) return { index, label, blocking: false, protectedStep: false };
+                const style = window.getComputedStyle(overlay);
+                const rect = overlay.getBoundingClientRect();
+                const hasDialogSemantics = overlay.matches("[role='dialog'], [aria-modal='true']");
+                const namedBanner = /cookie|popup|modal|overlay/i.test(`${overlay.id} ${overlay.className}`);
+                const floatsAbovePage = ["fixed", "absolute"].includes(style.position)
+                    && Number.parseInt(style.zIndex || '0', 10) > 1
+                    && rect.width > window.innerWidth * 0.2;
+                const protectedStep = /sign in|log in|password|one[- ]time|verification|captcha|payment|card number/i
+                    .test(overlay.innerText || '');
+                return { index, label, blocking: hasDialogSemantics || (namedBanner && floatsAbovePage), protectedStep };
+            })"""
+        )
+        for candidate in candidates:
+            label = " ".join(str(candidate["label"]).split())
+            if candidate["protectedStep"] or not candidate["blocking"] or not self._is_safe_overlay_dismissal_label(label):
+                continue
+            try:
+                control = controls.nth(int(candidate["index"]))
+                if not await control.is_visible() or not await control.is_enabled():
+                    continue
+                await control.click(timeout=2_000)
+                await self.wait_for_settled_state()
+                return label
+            except PlaywrightError:
+                # A popup can disappear as the page finishes loading. Trying the
+                # next safe close control is enough; never force a click.
+                continue
+        return None
+
     async def click(self, selector: str) -> PageObservation:
         """Click an accessible control while recovering from responsive-nav overlaps."""
         target = await self._clickable_target(selector)
@@ -434,6 +488,32 @@ class BrowserService:
     def _is_pointer_interception(error: Exception) -> bool:
         """Recognize an automation-only overlap, not a user-visible product failure."""
         return "intercepts pointer events" in str(error).lower()
+
+    @staticmethod
+    def _is_safe_overlay_dismissal_label(label: str) -> bool:
+        """Allow only non-destructive, explicit ways to dismiss an overlay."""
+        normalized = " ".join(label.lower().split())
+        return normalized in {
+            "close",
+            "close dialog",
+            "close modal",
+            "close popup",
+            "close banner",
+            "dismiss",
+            "dismiss dialog",
+            "dismiss popup",
+            "not now",
+            "no thanks",
+            "skip",
+            "continue without signing in",
+            "continue without login",
+            "reject",
+            "reject all",
+            "reject cookies",
+            "essential cookies only",
+            "use necessary cookies",
+            "got it",
+        }
 
     async def _find_fuzzy_clickable_target(self, target: str) -> Locator | None:
         """Match a product-card description to one unambiguous real control."""
